@@ -21,8 +21,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { AUTH_PROVIDER_KEYS, isProviderEnvVar } from "../src/core/auth-keys.ts";
+import { NONLOCALLY_ENV_VAR, NONLOCALLY_PROVIDER_ID, nonlocallyProvider } from "../src/agent/nonlocally.ts";
 import { builtinProviders } from "../node_modules/@earendil-works/pi-ai/dist/providers/all.js";
 import { findEnvKeys } from "../node_modules/@earendil-works/pi-ai/dist/env-api-keys.js";
+
+/** Providers WE declare (src/agent/nonlocally.ts) — not in pi-ai's builtin
+ *  table, so the truth below gains exactly these rows. */
+const CUSTOM_PROVIDERS = [{ id: "nonlocally", envVar: "NONLOCALLY_MODEL_API_KEY", label: "Nonlocally" }];
 
 /** pi-ai reads anthropic via AUTH_TOKEN/OAUTH_TOKEN alternates too — those
  *  stay env-only by owner spec; asserted absent below. */
@@ -55,6 +60,7 @@ function deriveProviders() {
 		const envVar = p.id === "anthropic" ? "ANTHROPIC_API_KEY" : first;
 		rows.push({ id: p.id, envVar, label: p.name });
 	}
+	rows.push(...CUSTOM_PROVIDERS);
 	rows.sort((a, b) => a.id.localeCompare(b.id));
 	return rows;
 }
@@ -76,6 +82,13 @@ describe("AUTH_PROVIDER_KEYS — the no-drift pin against pi-ai", () => {
 		for (const p of AUTH_PROVIDER_KEYS) {
 			assert.ok(!ANTHROPIC_ALTERNATES.includes(p.envVar), `${p.envVar} must not appear`);
 		}
+	});
+
+	it("the custom Nonlocally row matches the provider's own id, env var and name", () => {
+		const provider = nonlocallyProvider();
+		assert.equal(provider.id, NONLOCALLY_PROVIDER_ID);
+		assert.equal(provider.name, "Nonlocally");
+		assert.deepEqual(CUSTOM_PROVIDERS[0], { id: NONLOCALLY_PROVIDER_ID, envVar: NONLOCALLY_ENV_VAR, label: provider.name });
 	});
 
 	it("openrouter IS in the table (it graduated from the curated catalog)", () => {

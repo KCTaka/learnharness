@@ -17,6 +17,7 @@ import { chatGPTStream } from "./chatgpt-stream.ts";
 import type { ChatGPTDispatchLifecycle } from "./chatgpt-request-cycle.ts";
 import { nativeSubscriptionId, nativeSubscriptionModel } from "./subscription-bridge.ts";
 import { nativeSubscriptionStream } from "./subscription-stream.ts";
+import { NONLOCALLY_PROVIDER_ID, nonlocallyProvider } from "./nonlocally.ts";
 
 /** App identity is immutable and shared by Models and every native Agent.
  * Agent's default Pi attribution otherwise overrides the Models identity. */
@@ -62,8 +63,21 @@ export function piModels() {
 	if (!collection) {
 		collection = createModels({ identity: APP_IDENTITY });
 		for (const provider of builtinProviders()) collection.setProvider(provider);
+		collection.setProvider(nonlocallyProvider());
 	}
 	return collection;
+}
+
+/** Re-discover the Nonlocally model list (GET /v1/models with the current
+ *  key). Fire-and-forget safe: never rejects — a failed refresh keeps the
+ *  static baseline / previous list. Called when the key is saved and at
+ *  boot; model reads stay synchronous. */
+export async function refreshNonlocallyModels(): Promise<void> {
+	try {
+		await piModels().refresh({ providers: [NONLOCALLY_PROVIDER_ID], force: true });
+	} catch {
+		// keep the last-known list
+	}
 }
 
 /** OpenRouter API key (BYOK); tests never read this — they inject engines. */

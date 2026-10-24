@@ -101,6 +101,7 @@ export const AUTH_PROVIDER_KEYS: readonly AuthProviderInfo[] = [
 	{ id: "mistral", envVar: "MISTRAL_API_KEY", label: "Mistral" },
 	{ id: "moonshotai", envVar: "MOONSHOT_API_KEY", label: "Moonshot AI" },
 	{ id: "moonshotai-cn", envVar: "MOONSHOT_API_KEY", label: "Moonshot AI CN" },
+	{ id: "nonlocally", envVar: "NONLOCALLY_MODEL_API_KEY", label: "Nonlocally" },
 	{ id: "nvidia", envVar: "NVIDIA_API_KEY", label: "NVIDIA" },
 	{ id: "openai", envVar: "OPENAI_API_KEY", label: "OpenAI" },
 	{ id: "opencode", envVar: "OPENCODE_API_KEY", label: "OpenCode Zen" },

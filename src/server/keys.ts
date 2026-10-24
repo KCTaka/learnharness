@@ -53,6 +53,8 @@ import {
 } from "../core/auth-keys.ts";
 import { authStore } from "../store/auth.ts";
 import { isSubscriptionProvider, subscriptionConnected } from "../agent/subscription-connections.ts";
+import { refreshNonlocallyModels } from "../agent/models.ts";
+import { NONLOCALLY_ENV_VAR } from "../agent/nonlocally.ts";
 
 // The once-per-process boot record — globalThis anchor (HMR re-imports the
 // module; the snapshot must not re-run and misread fill-gapped vars as real
@@ -222,6 +224,7 @@ export function saveKey(id: string, value: string): { ok: true; status: AuthKeyS
 		process.env[id] = trimmed;
 		record.fillGap.add(id);
 	}
+	if (id === NONLOCALLY_ENV_VAR) void refreshNonlocallyModels();
 	// validateKeyShape guarantees catalog membership, so the row exists.
 	return { ok: true, status: keyStatuses().find((s) => s.id === id)! };
 }
@@ -244,3 +247,4 @@ export function deleteKey(id: string): AuthKeyStatus {
 // Reflect the file into the env at first import (idempotent; the module is
 // imported by every route/handler path that touches keys).
 initAuthEnv();
+if (process.env[NONLOCALLY_ENV_VAR]) void refreshNonlocallyModels();
