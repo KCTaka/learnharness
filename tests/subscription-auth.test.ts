@@ -7,22 +7,23 @@ import { createRequire } from "node:module";
 import { createModels, type OAuthCredential, type ProviderAuthInteraction } from "@earendil-works/pi-ai";
 import { githubCopilotProvider } from "@earendil-works/pi-ai/providers/github-copilot";
 import { xaiProvider } from "@earendil-works/pi-ai/providers/xai";
+import { anthropicProvider } from "@earendil-works/pi-ai/providers/anthropic";
 import type { NativeSubscriptionScope } from "../src/core/contracts/subscriptions.ts";
 const require = createRequire(import.meta.url);
 const { createSubscriptions, loadSubscriptionSDK, validEndpoint, publicError } = require("../electron/subscriptions.cjs");
 const { fileStore, validateState } = require("../electron/subscription-store.cjs");
 const { subscriptionControl } = require("../electron/subscription-ipc.cjs");
-const ids = ["github-copilot", "xai"] as const;
-const credential = (id: string, expires = Date.now() + 3600000): OAuthCredential => ({ type: "oauth", access: id === "xai" ? "fixture-xai-access" : "tid=fixture;proxy-ep=proxy.individual.githubcopilot.com;", refresh: "fixture-refresh", expires, ...(id === "github-copilot" ? { availableModelIds: [githubCopilotProvider().getModels()[0]!.id] } : {}) });
+const ids = ["github-copilot", "xai", "anthropic"] as const;
+const credential = (id: string, expires = Date.now() + 3600000): OAuthCredential => ({ type: "oauth", access: id === "xai" ? "fixture-xai-access" : id === "anthropic" ? "sk-ant-oat01-fixture-access" : "tid=fixture;proxy-ep=proxy.individual.githubcopilot.com;", refresh: "fixture-refresh", expires, ...(id === "github-copilot" ? { availableModelIds: [githubCopilotProvider().getModels()[0]!.id] } : {}) });
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { resolve, promise }; }
 async function fixture(options: { login?: (id: string, interaction: ProviderAuthInteraction) => Promise<OAuthCredential>; refresh?: (id: string, value: OAuthCredential, signal: AbortSignal) => Promise<OAuthCredential>; stores?: Record<string, unknown> } = {}) {
 	const directory = await fs.mkdtemp(path.join(os.tmpdir(), "lh-subscription-auth-"));
 	let refreshes = 0;
 	const factory = (id: string) => {
-		const native = id === "xai" ? xaiProvider() : githubCopilotProvider();
+		const native = id === "xai" ? xaiProvider() : id === "anthropic" ? anthropicProvider() : githubCopilotProvider();
 		return { ...native, auth: { ...native.auth, oauth: { ...native.auth.oauth!, login: (interaction: ProviderAuthInteraction) => options.login?.(id, interaction) ?? Promise.resolve(credential(id)), refresh: async (value: OAuthCredential, signal: AbortSignal) => { refreshes++; return options.refresh?.(id, value, signal) ?? { ...credential(id), refresh: "fixture-rotated" }; } } } };
 	};
-	const sdk = { createModels, githubCopilotProvider: () => factory("github-copilot"), xaiProvider: () => factory("xai") };
+	const sdk = { createModels, githubCopilotProvider: () => factory("github-copilot"), xaiProvider: () => factory("xai"), anthropicProvider: () => factory("anthropic") };
 	const updates: any[] = [], opened: string[] = [];
 	const controller = createSubscriptions({ directory, sdk, stores: options.stores, openExternal: async (url: string) => { opened.push(url); }, onChange: (snapshot: unknown) => updates.push(snapshot) });
 	await controller.ready;
@@ -35,7 +36,7 @@ async function fixture(options: { login?: (id: string, interaction: ProviderAuth
 test("main loader resolves Pi's import-only PUBLIC package exports and native OAuth without a CLI or network", async () => {
 	const sdk = await loadSubscriptionSDK(path.resolve(import.meta.dirname, ".."));
 	assert.equal(typeof sdk.createModels, "function");
-	for (const [id, factory] of [["github-copilot", sdk.githubCopilotProvider], ["xai", sdk.xaiProvider]] as const) {
+	for (const [id, factory] of [["github-copilot", sdk.githubCopilotProvider], ["xai", sdk.xaiProvider], ["anthropic", sdk.anthropicProvider]] as const) {
 		const provider = factory(), store = new sdk.InMemoryCredentialStore(); await store.modify(id, () => credential(id));
 		const models = sdk.createModels({ credentials: store }); models.setProvider({ ...provider, auth: { oauth: provider.auth.oauth } });
 		const resolved = await models.getAuth(provider.getModels()[0]); assert.equal(resolved.auth.apiKey, credential(id).access);
@@ -54,6 +55,7 @@ for (const id of ids) test(`${id}: independent default-ON file, restart, explici
 		const scope = await f.scope(id), result = await f.controller.lease(scope, false);
 		assert.equal(result.auth.apiKey, saved.credential.access);
 		if (id === "github-copilot") assert.equal(result.auth.baseUrl, "https://api.individual.githubcopilot.com");
+		if (id === "anthropic") assert.equal(result.auth.baseUrl, undefined);
 		await assert.rejects(f.controller.lease(scope, true), (error: any) => error.code === "background");
 		const reloaded = createSubscriptions({ directory: f.directory, sdk: f.sdk, openExternal: async () => {} }); await reloaded.ready;
 		assert.equal((await reloaded.status()).find((s: any) => s.providerId === id).connectionId, saved.connectionId); reloaded.close();
@@ -207,6 +209,21 @@ test("enterprise domains are preserved; derived endpoints and control errors are
 	for (const baseUrl of ["http://api.individual.githubcopilot.com", "https://attacker.example/", "https://user:pass@api.individual.githubcopilot.com", "https://api.individual.githubcopilot.com/path"]) assert(!validEndpoint("github-copilot", { apiKey: "fixture", baseUrl }, value));
 	await assert.rejects(subscriptionControl({ op: "status" }, { status: async () => { throw new Error("private-token-response"); } }), (error: Error) => !error.message.includes("private-token-response"));
 	assert(!publicError(new Error("private-token-response")).includes("private-token-response"));
+});
+test("Claude uses pi's Anthropic OAuth only, on the exact Anthropic API origin, and never another provider's endpoint", async () => {
+	const value = credential("anthropic");
+	assert(validEndpoint("anthropic", { apiKey: value.access }, value));
+	assert(validEndpoint("anthropic", { apiKey: value.access, baseUrl: "https://api.anthropic.com" }, value));
+	for (const baseUrl of ["http://api.anthropic.com", "https://attacker.example/", "https://user:pass@api.anthropic.com", "https://api.anthropic.com/v1", "https://api.anthropic.com/?q=1", "https://api.x.ai/v1", "https://api.individual.githubcopilot.com"]) assert(!validEndpoint("anthropic", { apiKey: value.access, baseUrl }, value));
+	assert(!validEndpoint("anthropic", { baseUrl: "https://api.anthropic.com" }, value));
+	assert(!validEndpoint("unknown-provider", { apiKey: "fixture", baseUrl: "https://api.x.ai/v1" }, value));
+	const f = await fixture();
+	try {
+		await f.controller.login("anthropic", true);
+		const snapshot = await f.controller.snapshot();
+		assert(snapshot.models.anthropic.length > 0); assert(snapshot.models.anthropic.every((model: any) => model.provider === "anthropic" && model.api === "anthropic-messages" && model.baseUrl === "https://api.anthropic.com"));
+		assert.equal(snapshot.statuses.find((s: any) => s.providerId === "xai").connected, false);
+	} finally { await f.cleanup(); }
 });
 test("atomic store failed rename preserves original and leaves no temporary files", async () => {
 	const f = await fixture();

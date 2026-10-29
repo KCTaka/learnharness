@@ -156,6 +156,7 @@ export function StatsBar({
 								<span className="tabular-nums text-card-foreground">{costLabel}</span>
 							</div>
 							{providers.includes("ChatGPT") && <a href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer" className="underline underline-offset-2">Manage ChatGPT usage</a>}
+							{providers.includes("Claude") && <a href="https://claude.ai/settings/usage" target="_blank" rel="noreferrer" className="underline underline-offset-2">Manage Claude usage</a>}
 							{unpriced > 0 && (
 								<div className="flex justify-between gap-2">
 									<span>Unpriced turns</span>

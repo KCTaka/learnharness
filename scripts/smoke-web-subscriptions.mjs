@@ -83,7 +83,7 @@ async function run(mode) {
 		const catalog = (await (await request("/api/models")).json()).providers;
 		for (const id of ["chatgpt", "github-copilot-subscription", "xai-subscription"]) assert(catalog.find((provider) => provider.id === id)?.keyPresent, `${mode}: cold ${id} unavailable.`);
 		let state = await (await request("/api/subscriptions")).json();
-		assert.equal(state.chatgpt.accounts[0].email, "fixture@example.invalid"); assert.equal(state.native.length, 2);
+		assert.equal(state.chatgpt.accounts[0].email, "fixture@example.invalid"); assert.equal(state.native.length, 3);
 		for (const secret of ["fixture-chatgpt-access", "fixture-chatgpt-refresh", "fixture-id-token", "fixture-xai-access", "fixture-refresh"]) assert(!JSON.stringify(state).includes(secret));
 		const stream = await fetch(origin + "/api/events", { signal: AbortSignal.timeout(60000) });
 		const reader = stream.body.getReader();

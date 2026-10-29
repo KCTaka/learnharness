@@ -9,6 +9,7 @@ import { Toggle } from "./controls";
 import { useNativeSubscriptionBridge } from "./subscription-client";
 
 export const COPILOT_POLICY_NOTICE = "Pi's native Copilot sign-in may enable additional models whose policy is not yet configured. Models explicitly disabled by policy are not enabled. Organization restrictions still apply.";
+export const CLAUDE_POLICY_NOTICE = "Claude sign-in uses Claude Code's sign-in and identifies requests as Claude Code. Anthropic does not authorize third-party apps to use Claude Pro/Max subscriptions, and doing so may violate its terms and lead to your account being restricted. Use at your own risk; an Anthropic API key is the supported alternative.";
 export const SUBSCRIPTION_BACKGROUND_HINT = "Allow LearnHarness helper agents and automatic follow-ups to use this connection.";
 export function subscriptionNotice(label: string, web = false): string { return `Your prompts, tool results, and relevant session context are sent to ${label} to run the work you select. Credentials are stored ${web ? "on the machine running LearnHarness" : "locally"} in an owner-only plaintext file. Provider terms, data-use policies, and plan limits apply. This connection never falls back to an API key.`; }
 export function subscriptionDisconnectCopy(label: string, web = false): string { return `Disconnect ${label} from LearnHarness? This stops work using this connection and removes its saved credentials from ${web ? "the machine running LearnHarness" : "this device"}. It does not cancel your subscription or revoke access at the provider. Saved model choices will remain unavailable until you reconnect or change them.`; }
@@ -89,6 +90,7 @@ export function NativeSubscriptionUIProvider({ children }: { children: React.Rea
 			</> : view === "notice" ? <>
 				<p className="mt-3 text-xs leading-relaxed text-muted-foreground" data-testid="subscription-privacy-notice">{subscriptionNotice(descriptor.label, web)}</p>
 				{dialog === "github-copilot" && <p className="mt-3 text-xs leading-relaxed text-muted-foreground" data-testid="copilot-policy-notice">{COPILOT_POLICY_NOTICE}</p>}
+				{dialog === "anthropic" && <p className="mt-3 text-xs leading-relaxed text-muted-foreground" data-testid="claude-policy-notice">{CLAUDE_POLICY_NOTICE}</p>}
 			</> : <>
 				<div className="mt-4 flex items-center gap-3 text-xs text-foreground">
 					<Toggle label="Allow background use" checked={management ? status.allowBackgroundUse : background} disabled={busy || !!operation || status.pending || !status.available} onChange={(enabled) => { setBackground(enabled); if (management && bridge) void control(() => bridge.consent(dialog, enabled)); else setBackgroundDirty(true); }} />
