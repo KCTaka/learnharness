@@ -321,6 +321,10 @@ export const ROLE_SLOT: Readonly<Record<ModelRole, ModelSlotName>> = {
 	auditor: "cheap",
 	visualMaker: "vision",
 	pdfReader: "vision",
+	// The post-session teaching-profile pass: judgment about what worked for
+	// the learner, so it rides the strong slot. Slot-only like pdfReader
+	// (not a BackgroundModelRole — no per-role override surface).
+	profileLearner: "strong",
 };
 
 /** General settings — app-level behavior. Version DISPLAY and plans login

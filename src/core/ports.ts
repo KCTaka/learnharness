@@ -27,6 +27,7 @@ import type {
 	NotesSource,
 } from "./contracts.ts";
 import type { UserSettings } from "./settings.ts";
+import type { TeachingProfile } from "./contracts/profile.ts";
 
 // ─── ChatStore — the session record's home (data/chats) ─────────────────────
 
@@ -158,6 +159,16 @@ export interface JobStore {
 	 *  route refuses while jobs are still running, so by the time this
 	 *  fires every record is terminal. */
 	deleteJobsForChat(chatId: string): number;
+}
+
+// ─── ProfileStore — the learner's teaching profile (data/profile.json) ───────
+
+/** Whole-file read/write; the store persists and shape-guards, never decides
+ *  (op semantics live in core/teaching-profile.ts, the sole writer in
+ *  src/server/profile.ts). read() always returns a valid profile. */
+export interface ProfileStore {
+	read(): TeachingProfile;
+	write(profile: TeachingProfile): void;
 }
 
 // ─── SettingsStore — THE user settings record (settings-storage wave, 2026-09-19) ──

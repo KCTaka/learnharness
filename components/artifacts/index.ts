@@ -50,4 +50,6 @@ export const artifactRenderers: Record<string, ComponentType<ArtifactPartProps>>
 	// discipline (their results are pre-formatted strings too).
 	list_sessions: ToolCallCard,
 	list_propositions: ToolCallCard,
+	// The teacher's teaching-profile reader: same quiet expandable card.
+	read_teaching_profile: ToolCallCard,
 };

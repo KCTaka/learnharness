@@ -84,3 +84,5 @@ export * from "./coverage.ts";
 // ONE session→markdown formatter — the extractor's view and the user-facing
 // export share it. Pure, browser-safe.
 export * from "./session-markdown.ts";
+// teaching-profile.ts: ops/render/signals for the learner teaching profile (pure, browser-safe).
+export * from "./teaching-profile.ts";

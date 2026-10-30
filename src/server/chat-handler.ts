@@ -43,6 +43,7 @@ import {
 import { modelsNotConfigured, providerKeyMissing as providerKeyMissingEnvelope, type ProviderKeyMissing } from "../core/settings.ts";
 import { beginTurn, endTurn } from "./turn-liveness.ts";
 import { applyParkedDismissal } from "./dismissal-park.ts";
+import { armProfileIdle, readProfile } from "./profile.ts";
 import { registerTurn, rememberTurnFailure, unregisterTurn } from "./turn-runs.ts";
 import { persistTurn, triggerExtraction, TurnPersistenceError } from "./turn-service.ts";
 import { hasProbeDone, danglingQuestionOf } from "../core/native-messages.ts";
@@ -481,6 +482,8 @@ export async function handleChatInput(
 						// The registry drop's signal (2026-09-20): no live engine
 						// = no research tool in the teacher's registry.
 						searchAvailable,
+						// How this learner is best taught — read on demand, never injected.
+						readProfile,
 					},
 					agentOpts,
 				)
@@ -608,6 +611,10 @@ export async function handleChatInput(
 				// nothing must find the persisted record current — the same
 				// ordering rule as endTurn.
 				unregisterTurn(chatId);
+				// The teaching-profile idle trigger: once this session sits quiet
+				// the learning pass reads it (behavioral signals alone). Practice
+				// sessions are never learned from.
+				if (record.kind !== "practice") armProfileIdle(chatId);
 				// Wave C steer settlement: the live agent is dead (no more
 				// followUp handoffs) - reconcile the steer registry against
 				// what this run actually persisted (in-run injections

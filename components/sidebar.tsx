@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { MenuShell } from "@/components/menu-shell";
 import { DeleteSessionDialog } from "@/components/delete-session-dialog";
+import { WrapUpDialog } from "@/components/wrap-up-dialog";
 import type { ChatDeleteMode } from "@/src/core";
 import { DumbbellIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, PlusIcon, SearchIcon, SettingsIcon } from "lucide-react";
 import { ActivitySection } from "@/components/activity-dock";
@@ -550,6 +551,7 @@ function SessionsSidebar() {
 	const ctxAnchorRef = useRef<HTMLElement | null>(null);
 	const [renamingId, setRenamingId] = useState<string | null>(null);
 	const [deleting, setDeleting] = useState<ChatListItem | null>(null);
+	const [wrapping, setWrapping] = useState<ChatListItem | null>(null);
 
 	const openContext = (e: React.MouseEvent<HTMLButtonElement>, chat: ChatListItem) => {
 		e.preventDefault(); // suppress the native menu
@@ -914,6 +916,23 @@ function SessionsSidebar() {
 						>
 							Export as Markdown…
 						</button>
+						{/* Wrap up (teaching profile): the explicit end-of-session
+						    reflection. Practice sessions are never learned from, so
+						    they don't offer it. */}
+						{(chats?.find((c) => c.id === ctxChatId)?.kind ?? "teach") !== "practice" && (
+							<button
+								type="button"
+								data-testid="ctx-wrap-up"
+								onClick={() => {
+									const target = chats?.find((c) => c.id === ctxChatId);
+									if (target) setWrapping(target);
+									setCtxChatId(null);
+								}}
+								className="flex items-center rounded-lg px-2.5 py-1.5 text-left text-foreground transition-colors hover:bg-accent"
+							>
+								Wrap up session…
+							</button>
+						)}
 						<button
 							type="button"
 							data-testid="ctx-delete"
@@ -933,6 +952,7 @@ function SessionsSidebar() {
 
 				{/* The two-option delete dialog (wave 6) — portaled to body
 				    by the component itself, lives here for state locality. */}
+				<WrapUpDialog chat={wrapping} onClose={() => setWrapping(null)} />
 				<DeleteSessionDialog
 					chat={deleting}
 					onClose={() => setDeleting(null)}

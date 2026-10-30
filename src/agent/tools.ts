@@ -13,12 +13,13 @@ import {
 	quizInputProblems,
 } from "../core/question-core.ts";
 import { filterEnabledTools, type EnabledTools } from "../core/pending.ts";
-import type { JobRecord } from "../core/contracts.ts";
+import type { JobRecord, TeachingProfile } from "../core/contracts.ts";
 import type { JobStore } from "../core/ports.ts";
 import { jobTools, type DemoInput, type PdfInput, type ResearchInput, type VisualInput } from "./tools/jobs.ts";
 import { planTools, type PlanToolContext } from "./tools/plan.ts";
 import { probeDoneTool, type ProbeDoneContext } from "./tools/probe.ts";
 import { proberGraphTools } from "./tools/graph.ts";
+import { teachingProfileTool } from "./tools/profile.ts";
 import { readTool } from "./tools/read.ts";
 import { lsTool } from "./tools/ls.ts";
 import { findTool } from "./tools/find.ts";
@@ -400,6 +401,9 @@ export interface TeacherToolContext extends PlanToolContext {
 	spawn: (job: JobRecord, input: ResearchInput | DemoInput | VisualInput | PdfInput) => void;
 	/** Retained search-status seam; research dispatch is available keylessly. */
 	searchAvailable?: () => boolean;
+	/** The teaching-profile reader: present = `read_teaching_profile` is
+	 *  registered; absent = no such tool (tests drive this seam). */
+	readProfile?: () => TeachingProfile;
 }
 
 /**
@@ -459,6 +463,7 @@ export function createTeacherTools(
 			grep: grepTool,
 			...planTools(ctx),
 			...jobTools({ chatId: ctx.chatId, jobStore: ctx.jobStore, spawn: ctx.spawn, searchAvailable: ctx.searchAvailable }),
+			...(ctx.readProfile ? { read_teaching_profile: teachingProfileTool(ctx.readProfile) } : {}),
 		},
 		withoutMechanics(enabled),
 		),

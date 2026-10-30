@@ -12,6 +12,15 @@ export { NotesImportError } from "../agent/subagents/extraction.ts";
 export * from "./commit-positions.ts";
 export * from "./jobs.ts";
 export { checkAgentHealth, isAgentHealthKind } from "./agent-health.ts";
+export {
+	applyManualOps,
+	armProfileIdle,
+	clearProfile,
+	disarmProfileIdle,
+	readProfile,
+	runProfilePass,
+	type ProfilePassOutcome,
+} from "./profile.ts";
 export * from "./stores.ts";
 export { readRenderSettings, writeRenderSettings } from "../store/render-settings.ts";
 // The settings record + prompt overrides (settings-storage wave, 2026-09-19).

@@ -9,6 +9,7 @@
 import { chatStore } from "../store/chats.ts";
 import { graphStore } from "../store/graph.ts";
 import { jobStore } from "../store/jobs.ts";
+import { profileStore } from "../store/profile.ts";
 import { settingsStore } from "../store/settings.ts";
 import { resolveSettings, type EffectiveSettings } from "../core/settings-resolution.ts";
 import { syncCustomProvider } from "./custom-provider.ts";
@@ -17,6 +18,7 @@ export const stores = {
 	chatStore,
 	graphStore,
 	jobStore,
+	profileStore,
 	settingsStore,
 };
 
