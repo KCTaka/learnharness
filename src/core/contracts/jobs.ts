@@ -15,6 +15,27 @@ import { newHandoffMessage } from "../native-messages.ts";
 export type JobKind = "research" | "demo" | "visual" | "pdf";
 export type JobStatus = "running" | "done" | "error";
 
+// ─── Agent health check (settings → Agent → "Test agents") ──────────────────
+
+/** The sub-agents a health check exercises (pdf is not covered). */
+export const AGENT_HEALTH_KINDS = ["research", "demo", "visual"] as const;
+export type AgentHealthKind = (typeof AGENT_HEALTH_KINDS)[number];
+
+/** One smoke test's outcome — never a job record: a health check writes
+ *  nothing to a chat, steers nothing, and persists nothing. */
+export interface AgentHealthResult {
+	kind: AgentHealthKind;
+	ok: boolean;
+	durationMs: number;
+	/** Provider-qualified model that ran ("provider:id"); absent when no engine resolved. */
+	model?: string;
+	/** What was verified (pass) or the honest failure reason (fail). */
+	detail: string;
+	/** API-dollar estimate; null/absent when unpriced (absence is not zero). */
+	cost?: number | null;
+	steps?: number;
+}
+
 export interface JobRecord {
 	id: string;
 	kind: JobKind;
