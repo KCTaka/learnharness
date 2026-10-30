@@ -160,6 +160,25 @@ describe("DispatchCard — the BYOK refusal tone (owner, 2026-09-22)", () => {
 		const html = renderToStaticMarkup(inJobs([job({ status: "done", error: undefined })]));
 		assert.ok(html.includes("finished"));
 	});
+
+	it("a finished result with delivery pending says it waits on the question — only while one is pending", () => {
+		const held = (questionPending: boolean) =>
+			renderToStaticMarkup(
+				<JobsContext.Provider value={[job({ status: "done", error: undefined, delivery: { kind: "result", status: "pending" } })]}>
+					<ChatActionsContext.Provider
+						value={{ chatId: "c1", syncFromServer: async () => {}, sendText: () => {}, openSetup: () => {}, questionPending }}
+					>
+						<DispatchCard toolCallId="t1" kind="visual" />
+					</ChatActionsContext.Provider>
+				</JobsContext.Provider>,
+			);
+		assert.ok(held(true).includes('data-testid="dispatch-held"'));
+		assert.ok(!held(false).includes("dispatch-held"));
+		const delivered = renderToStaticMarkup(
+			inJobs([job({ status: "done", error: undefined, delivery: { kind: "result", status: "delivered" } })]),
+		);
+		assert.ok(!delivered.includes("dispatch-held"));
+	});
 });
 
 describe("render smoke tests", () => {

@@ -130,6 +130,10 @@ export const ChatActionsContext = createContext<{
 	/** Opens the model setup dialog (BYOK, 2026-09-22): refused job cards
 	 *  deep-link into the same SetupDialog the send interception uses. */
 	openSetup: () => void;
+	/** An unanswered question holds finished sub-agent results back: the
+	 *  wake pipeline delivers them only after the answer turn (jobs.ts
+	 *  waitForIdle). Dispatch cards read this to say so. */
+	questionPending?: boolean;
 } | null>(null);
 
 /** The BYOK refusal envelope from the transport's error text: the
@@ -1255,6 +1259,7 @@ export function Chat({
 					void send({ type: "text", text: t });
 				},
 				openSetup: () => setSetupOpen(true),
+				questionPending: pending !== null,
 			}}
 		>
 		<SessionMermaidContext.Provider

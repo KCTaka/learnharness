@@ -28,7 +28,8 @@ const KIND_LABEL: Record<JobKind, string> = {
 
 export function DispatchCard({ toolCallId, kind }: { toolCallId: string; kind: JobKind }) {
 	const jobs = useContext(JobsContext);
-	const job = jobs.find((j) => j.toolCallId === toolCallId) ?? null;
+	const actions = useContext(ChatActionsContext);
+	const job =jobs.find((j) => j.toolCallId === toolCallId) ?? null;
 	const label = KIND_LABEL[kind];
 
 	if (!job || job.status === "running") {
@@ -47,6 +48,9 @@ export function DispatchCard({ toolCallId, kind }: { toolCallId: string; kind: J
 		return <DispatchRefusedCard label={label} line="needs a provider key" button="Add a key" />;
 	}
 	const failed = job.status === "error";
+	// A finished result is held until the pending question is answered —
+	// say so, so the wait doesn't read as a lost result.
+	const held = job.delivery?.status === "pending" && actions?.questionPending === true;
 	return (
 		<div
 			className="flex items-center gap-2 text-xs text-muted-foreground"
@@ -55,6 +59,11 @@ export function DispatchCard({ toolCallId, kind }: { toolCallId: string; kind: J
 			{failed ? <XIcon className="size-3.5 text-red-500" /> : <CheckIcon className="size-3.5" />}
 			<span className="font-medium uppercase tracking-wide">{label}</span>
 			<span>{failed ? "failed" : "finished"}</span>
+			{held && (
+				<span data-testid="dispatch-held">
+					· {failed ? "the notice" : "the result"} will appear after you answer the question
+				</span>
+			)}
 		</div>
 	);
 }
